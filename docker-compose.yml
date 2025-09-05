@@ -1,0 +1,10 @@
+---
+services:
+  palworld-crafting:
+    build: .
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    container_name: palworld-crafting-app
+    # environment:
+    #   - GIN_MODE=release  # Optional: for production mode if switch to Gin framework
