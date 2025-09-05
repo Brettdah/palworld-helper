@@ -1,0 +1,16 @@
+services:
+  palworld-helper:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      # Monter le code source pour hot reload
+      - ./web:/root/web:ro
+      - ./cmd:/app/cmd:ro
+      - ./internal:/app/internal:ro
+    environment:
+      - GO_ENV=development
+    # Rebuild automatiquement au démarrage
+    command: sh -c "cd /app && go run ./cmd/"
