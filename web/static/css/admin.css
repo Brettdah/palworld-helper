@@ -10,7 +10,7 @@
 
 .tab-btn {
     background: rgba(15, 52, 96, 0.6);
-    color: #600000 /* Rouge sombre au lieu du rose */
+    color: #661b1b;
     border: 2px solid #0f3460;
     padding: 10px 20px;
     border-radius: 8px;
@@ -20,13 +20,13 @@
 
 .tab-btn:hover {
     background: rgba(139, 21, 56, 0.2);
-    border-color: #600000
+    border-color: #661b1b;
 }
 
 .tab-btn.active {
-    background: #600000
+    background: #661b1b;
     color: #1a1a2e;
-    border-color: #600000
+    border-color: #661b1b;
 }
 
 .tab-content {
@@ -86,7 +86,7 @@
 
 .column-name {
     font-weight: bold;
-    color: #600000
+    color: #661b1b;
 }
 
 .column-type {
@@ -100,7 +100,7 @@
 }
 
 .column-attribute {
-    background: #600000
+    background: #661b1b;
     color: #1a1a2e;
     padding: 2px 6px;
     border-radius: 3px;
@@ -115,7 +115,7 @@
 #queryInput {
     width: 100%;
     background: rgba(26, 26, 46, 0.8);
-    color: #600000
+    color: #661b1b;
     border: 2px solid #0f3460;
     border-radius: 8px;
     padding: 15px;
@@ -127,7 +127,7 @@
 
 #queryInput:focus {
     outline: none;
-    border-color: #600000
+    border-color: #661b1b;
     box-shadow: 0 0 10px rgba(139, 21, 56, 0.3);
 }
 
@@ -173,7 +173,7 @@
 
 #tableSelect {
     background: rgba(26, 26, 46, 0.8);
-    color: #600000
+    color: #661b1b;
     border: 2px solid #0f3460;
     border-radius: 8px;
     padding: 10px;
@@ -183,7 +183,7 @@
 
 #tableSelect:focus {
     outline: none;
-    border-color: #600000
+    border-color: #661b1b;
 }
 
 .data-table {
@@ -212,7 +212,7 @@
 .data-table td {
     padding: 10px 12px;
     border-bottom: 1px solid rgba(15, 52, 96, 0.3);
-    color: #600000
+    color: #661b1b;
 }
 
 .data-table tr:last-child td {
@@ -252,7 +252,7 @@
 .form-group input[type="text"] {
     width: 100%;
     background: rgba(26, 26, 46, 0.8);
-    color: #600000
+    color: #661b1b;
     border: 2px solid #0f3460;
     border-radius: 8px;
     padding: 10px;
@@ -261,7 +261,7 @@
 
 .form-group input[type="text"]:focus {
     outline: none;
-    border-color: #600000
+    border-color: #661b1b;
 }
 
 .columns-section {
@@ -291,7 +291,7 @@
 .column-row input,
 .column-row select {
     background: rgba(26, 26, 46, 0.8);
-    color: #600000
+    color: #661b1b;
     border: 2px solid #0f3460;
     border-radius: 4px;
     padding: 8px;
@@ -301,11 +301,11 @@
 .column-row input:focus,
 .column-row select:focus {
     outline: none;
-    border-color: #600000
+    border-color: #661b1b;
 }
 
 .column-row label {
-    color: #600000
+    color: #661b1b;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -343,7 +343,7 @@
 }
 
 .close {
-    color: #600000
+    color: #661b1b;
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -381,7 +381,7 @@
 .form-field input {
     width: 100%;
     background: rgba(26, 26, 46, 0.8);
-    color: #600000
+    color: #661b1b;
     border: 2px solid #0f3460;
     border-radius: 8px;
     padding: 10px;
@@ -390,7 +390,7 @@
 
 .form-field input:focus {
     outline: none;
-    border-color: #600000
+    border-color: #661b1b;
 }
 
 .modal-actions {

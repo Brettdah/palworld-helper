@@ -88,11 +88,19 @@ func (h *AdminHandler) HandleTableOperations(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *AdminHandler) getTableData(w http.ResponseWriter, r *http.Request, tableName string) {
+	// Log pour débugger
+	fmt.Printf("Getting data from table: %s\n", tableName)
+
 	data, err := h.service.GetTableData(tableName)
 	if err != nil {
+		// Log l'erreur complète
+		fmt.Printf("Get table data error: %v\n", err)
 		http.Error(w, "Failed to get table data: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Log pour débugger
+	fmt.Printf("Retrieved %d rows from table %s\n", len(data), tableName)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
@@ -105,12 +113,18 @@ func (h *AdminHandler) insertTableData(w http.ResponseWriter, r *http.Request, t
 		return
 	}
 
+	// Log pour débugger
+	fmt.Printf("Inserting data into table %s: %+v\n", tableName, data)
+
 	if err := h.service.InsertData(tableName, data); err != nil {
+		// Log l'erreur complète
+		fmt.Printf("Insert error: %v\n", err)
 		http.Error(w, "Failed to insert data: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"message": "Data inserted successfully"}`))
 }
 
@@ -121,11 +135,17 @@ func (h *AdminHandler) updateTableData(w http.ResponseWriter, r *http.Request, t
 		return
 	}
 
+	// Log pour débugger
+	fmt.Printf("Updating data in table %s, id %d: %+v\n", tableName, id, data)
+
 	if err := h.service.UpdateData(tableName, id, data); err != nil {
+		// Log l'erreur complète
+		fmt.Printf("Update error: %v\n", err)
 		http.Error(w, "Failed to update data: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"message": "Data updated successfully"}`))
 }
 

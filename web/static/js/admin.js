@@ -1,7 +1,6 @@
 let currentTable = '';
 let currentEditingRecord = null;
 
-// Initialize admin interface
 document.addEventListener('DOMContentLoaded', function() {
     showTab('schema');
     loadSchema();
@@ -98,15 +97,68 @@ async function loadTableData() {
     currentTable = tableName;
     addButton.disabled = false;
 
-    try {
-        const response = await fetch(`/admin/api/table/${tableName}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    // Afficher un indicateur de chargement
+    document.getElementById('tableDataContainer').innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <p>Loading table data...</p>
+        </div>
+    `;
 
-        const data = await response.json();
+    try {
+        console.log(`Loading data for table: ${tableName}`);
+
+        const response = await fetch(`/admin/api/table/${tableName}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${responseText}`);
+        }
+
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            throw new Error(`Invalid JSON response: ${parseError.message}`);
+        }
+
+        console.log('Parsed data:', data);
+        console.log('Data type:', typeof data);
+        console.log('Data length:', Array.isArray(data) ? data.length : 'Not an array');
+
         renderTableData(data);
+
     } catch (error) {
         console.error('Error loading table data:', error);
-        showNotification(`Failed to load data for table: ${tableName}`, 'error');
+
+        let errorMessage = error.message;
+        if (error.message.includes('data is null')) {
+            errorMessage = `Database connection issue. This might be caused by SQLite statement handling. Try refreshing the schema first.`;
+        }
+
+        showNotification(`Failed to load data for table: ${tableName}. ${errorMessage}`, 'error');
+
+        document.getElementById('tableDataContainer').innerHTML = `
+            <div style="color: #e94560; text-align: center; padding: 20px; background: rgba(233, 69, 96, 0.1); border-radius: 5px; margin: 10px 0;">
+                <h3>⚠️ Error Loading Table Data</h3>
+                <p><strong>Table:</strong> ${tableName}</p>
+                <p><strong>Error:</strong> ${errorMessage}</p>
+                <div style="margin-top: 15px;">
+                    <button onclick="loadSchema(); setTimeout(() => loadTableData(), 1000);" class="btn btn-primary">Refresh Schema & Retry</button>
+                    <button onclick="loadTableData()" class="btn btn-secondary">Retry Load</button>
+                </div>
+            </div>
+        `;
     }
 }
 
@@ -244,11 +296,6 @@ function removeColumn(button) {
     button.parentElement.remove();
 }
 
-// FONCTIONS MANQUANTES - AJOUTÉES CI-DESSOUS
-
-/**
- * Crée une nouvelle table
- */
 async function createTable() {
     const tableName = document.getElementById('newTableName').value.trim();
 
@@ -337,9 +384,6 @@ async function createTable() {
     }
 }
 
-/**
- * Ajouter un nouvel enregistrement
- */
 async function addNewRecord() {
     if (!currentTable) {
         showNotification('No table selected', 'error');
@@ -367,9 +411,6 @@ async function addNewRecord() {
     }
 }
 
-/**
- * Éditer un enregistrement
- */
 async function editRecord(recordId) {
     try {
         // Get table schema
@@ -404,9 +445,6 @@ async function editRecord(recordId) {
     }
 }
 
-/**
- * Supprimer un enregistrement
- */
 async function deleteRecord(recordId) {
     if (!confirm('Are you sure you want to delete this record?')) {
         return;
@@ -431,9 +469,6 @@ async function deleteRecord(recordId) {
     }
 }
 
-/**
- * Ouvrir le modal d'édition
- */
 function openEditModal(record, columns) {
     currentEditingRecord = record;
 
@@ -466,70 +501,103 @@ function openEditModal(record, columns) {
     modal.style.display = 'block';
 }
 
-/**
- * Fermer le modal
- */
 function closeModal() {
     const modal = document.getElementById('editModal');
     modal.style.display = 'none';
     currentEditingRecord = null;
 }
 
-/**
- * Sauvegarder un enregistrement
- */
 async function saveRecord() {
     const editForm = document.getElementById('editForm');
     const formData = new FormData(editForm);
     const data = {};
 
+    // Nettoyer les données avant envoi
     for (let [key, value] of formData.entries()) {
-        data[key] = value;
+        const cleanValue = value ? value.trim() : '';
+
+        // Pour les nouvelles entrées, ne pas inclure les champs vides
+        // Pour les mises à jour, inclure tous les champs
+        if (currentEditingRecord || cleanValue !== '') {
+            data[key] = cleanValue === '' ? null : cleanValue;
+        }
+    }
+
+    console.log('Attempting to save record:', data);
+    console.log('Current editing record:', currentEditingRecord);
+    console.log('Current table:', currentTable);
+
+    if (Object.keys(data).length === 0 && !currentEditingRecord) {
+        showNotification('Please fill in at least one field', 'warning');
+        return;
     }
 
     try {
         let response;
+        let url;
+        let method;
 
         if (currentEditingRecord) {
             // Update existing record
-            response = await fetch(`/admin/api/table/${currentTable}/${currentEditingRecord.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+            method = 'PUT';
+            url = `/admin/api/table/${currentTable}/${currentEditingRecord.id}`;
         } else {
             // Create new record
-            response = await fetch(`/admin/api/table/${currentTable}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+            method = 'POST';
+            url = `/admin/api/table/${currentTable}`;
         }
 
+        console.log(`Making ${method} request to: ${url}`);
+        console.log('Request payload:', JSON.stringify(data, null, 2));
+
+        response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        const responseText = await response.text();
+        console.log('Save response status:', response.status);
+        console.log('Save response text:', responseText);
+
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText);
+            let errorMessage = responseText;
+
+            if (responseText.includes('data is null')) {
+                errorMessage = 'Database connection issue. The table might be corrupted or there might be a SQLite driver problem. Try creating the record with different data or recreating the table.';
+            }
+
+            throw new Error(errorMessage || `HTTP ${response.status}`);
         }
 
         const action = currentEditingRecord ? 'updated' : 'created';
         showNotification(`Record ${action} successfully`, 'success');
 
         closeModal();
-        loadTableData(); // Refresh table data
+
+        // Attendre un peu avant de recharger pour laisser le temps à la DB de se synchroniser
+        setTimeout(() => {
+            loadTableData();
+        }, 500);
 
     } catch (error) {
         console.error('Error saving record:', error);
-        showNotification(`Failed to save record: ${error.message}`, 'error');
+        let friendlyMessage = error.message;
+
+        if (error.message.includes('UNIQUE constraint failed')) {
+            friendlyMessage = 'A record with this data already exists. Please check for duplicates.';
+        } else if (error.message.includes('NOT NULL constraint failed')) {
+            friendlyMessage = 'Please fill in all required fields.';
+        } else if (error.message.includes('data is null')) {
+            friendlyMessage = 'Database connection issue. Try refreshing the page and trying again.';
+        }
+        showNotification(`Failed to save record: ${friendlyMessage}`, 'error');
     }
 }
 
-/**
- * Échapper le HTML pour éviter les injections XSS
- */
 function escapeHtml(text) {
     const map = {
         '&': '&amp;',
@@ -542,9 +610,6 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-/**
- * Afficher une notification
- */
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     const existing = document.querySelector('.notification');
@@ -607,7 +672,6 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Fermer le modal si on clique en dehors
 window.onclick = function(event) {
     const modal = document.getElementById('editModal');
     if (event.target === modal) {

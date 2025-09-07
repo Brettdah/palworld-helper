@@ -10,7 +10,10 @@ services:
       - ./web:/root/web:ro
       - ./cmd:/app/cmd:ro
       - ./internal:/app/internal:ro
+      - ./data/:/app/data
+      # Configuration Air
+      - ./.air.toml:/app/.air.toml:ro
     environment:
       - GO_ENV=development
-    # Rebuild automatiquement au démarrage
-    command: sh -c "cd /app && go run ./cmd/"
+    # Forcer Air à utiliser la config
+    command: sh -c "cd /app && air -c .air.toml"

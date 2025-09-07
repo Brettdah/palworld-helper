@@ -58,8 +58,8 @@ func (s *SQLiteDB) initSchema() error {
 		`CREATE TABLE IF NOT EXISTS crafting_recipes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
-			category TEXT NOT NULL,
-			description TEXT
+			category_id TEXT NOT NULL,
+			FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS recipe_resources (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +69,29 @@ func (s *SQLiteDB) initSchema() error {
 			FOREIGN KEY (recipe_id) REFERENCES crafting_recipes(id) ON DELETE CASCADE,
 			FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
 			UNIQUE(recipe_id, resource_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS categories (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL UNIQUE
+		)`,
+		`CREATE TABLE IF NOT EXISTS technologies (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL UNIQUE,
+			level INTEGER NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS technology_recipes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			technology_id TEXT NOT NULL,
+			recipe_id INTEGER NOT NULL,
+			FOREIGN KEY (recipe_id) REFERENCES crafting_recipes(id) ON DELETE CASCADE,
+			FOREIGN KEY (technology_id) REFERENCES technologies(id) ON DELETE CASCADE,
+			UNIQUE(technology_id, recipe_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS inventory (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			resource_id INTEGER NOT NULL,
+			quantity INTEGER NOT NULL,
+			FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
 		)`,
 	}
 
@@ -436,18 +459,15 @@ func (s *SQLiteDB) ExecuteQuery(query string) ([]map[string]interface{}, error) 
 	return results, nil
 }
 
-func (r *sqliteAdminRepository) ExecuteNonQuery(query string, args ...interface{}) error {
-	stmt, err := r.db.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(args...)
+func (s *SQLiteDB) ExecuteNonQuery(query string, args ...interface{}) error {
+	result, err := s.db.Exec(query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to execute statement: %w", err)
 	}
 
+	if rowsAffected, err := result.RowsAffected(); err == nil {
+		fmt.Printf("Query executed successfully, rows affected: %d\n", rowsAffected)
+	}
 	return nil
 }
 

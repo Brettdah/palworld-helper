@@ -45,8 +45,34 @@ func (s *adminService) ExecuteQuery(query string) ([]map[string]interface{}, err
 
 // GetTableData retrieves all data from a specific table
 func (s *adminService) GetTableData(tableName string) ([]map[string]interface{}, error) {
+	tables, err := s.repo.GetTables()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tables list: %w", err)
+	}
+
+	tableExists := false
+	for _, table := range tables {
+		if table == tableName {
+			tableExists = true
+			break
+		}
+	}
+
+	if !tableExists {
+		return nil, fmt.Errorf("table '%s' does not exist", tableName)
+	}
+
+	fmt.Printf("Getting data from table: %s\n", tableName)
+
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)
-	return s.repo.ExecuteQuery(query)
+	data, err := s.repo.ExecuteQuery(query)
+	if err != nil {
+		fmt.Printf("Error executing query '%s': %v\n", query, err)
+		return nil, fmt.Errorf("failed to query table %s: %w", tableName, err)
+	}
+
+	fmt.Printf("Retrieved %d rows from table %s\n", len(data), tableName)
+	return data, nil
 }
 
 // CreateTable creates a new table with specified columns
@@ -79,10 +105,12 @@ func (s *adminService) CreateTable(tableName string, columns []domain.ColumnInfo
 
 // InsertData inserts new data into a table
 func (s *adminService) InsertData(tableName string, data map[string]interface{}) error {
+	fmt.Printf("Attempting to insert data into table %s: %+v\n", tableName, data)
+
 	// Get table schema to identify auto-increment columns
 	tableInfo, err := s.repo.GetTableInfo(tableName)
 	if err != nil {
-		return fmt.Errorf("failed to get table info: %w", err)
+		return fmt.Errorf("failed to get table info for %s: %w", tableName, err)
 	}
 
 	var columns []string
@@ -99,12 +127,17 @@ func (s *adminService) InsertData(tableName string, data map[string]interface{})
 				// Skip auto-increment primary keys, unless explicitly provided and not empty
 				if value == nil || value == "" || value == "0" {
 					shouldInclude = false
+					fmt.Printf("Skipping auto-increment column %s\n", column)
 				}
 				break
 			}
 		}
 
 		if shouldInclude {
+			// Nettoyer les valeurs vides
+			if value == "" {
+				value = nil
+			}
 			columns = append(columns, column)
 			placeholders = append(placeholders, "?")
 			values = append(values, value)
@@ -120,8 +153,17 @@ func (s *adminService) InsertData(tableName string, data map[string]interface{})
 		strings.Join(columns, ", "),
 		strings.Join(placeholders, ", "))
 
+	fmt.Printf("Executing INSERT query: %s with values: %+v\n", query, values)
+
 	// Use a dedicated method for INSERT operations
-	return s.repo.ExecuteNonQuery(query, values...)
+	err = s.repo.ExecuteNonQuery(query, values...)
+	if err != nil {
+		fmt.Printf("Insert failed with error: %v\n", err)
+		return fmt.Errorf("failed to insert data into %s: %w", tableName, err)
+	}
+
+	fmt.Printf("Insert successful\n")
+	return nil
 }
 
 // UpdateData updates existing data in a table
